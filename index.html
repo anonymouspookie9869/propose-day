@@ -1,98 +1,145 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Eternal Frame</title>
+    <title>Our First & Last Frame</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         :root {
-          --rose-gold: #b76e79;
-          --champagne: #f7e7ce;
-          --velvet: #6b0f1a;
+          --rose-400: #fb7185;
+          --rose-600: #e11d48;
+          --rose-900: #4c0519;
         }
         body {
             font-family: 'Inter', sans-serif;
-            background: #fffcfc;
+            background: #000;
+            color: #fff;
+            margin: 0;
             overflow-x: hidden;
-            color: #1a1a1a;
             scroll-behavior: smooth;
+            cursor: none;
         }
-        .font-romantic {
-            font-family: 'Dancing Script', cursive;
+        .font-romantic { font-family: 'Dancing Script', cursive; }
+        .font-serif-elegant { font-family: 'Playfair Display', serif; }
+
+        .grain::before {
+          content: "";
+          position: fixed;
+          top: -100%;
+          left: -100%;
+          width: 200%;
+          height: 200%;
+          background-image: url("https://upload.wikimedia.org/wikipedia/commons/5/5c/Image_noise_example.png");
+          opacity: 0.03; /* Lowered opacity for performance */
+          pointer-events: none;
+          z-index: 300;
+          animation: noise 1.5s steps(3) infinite;
         }
-        .font-serif-elegant {
-            font-family: 'Playfair Display', serif;
-        }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-          width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-          background: #fff5f7;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: #f43f5e;
-          border-radius: 10px;
+        @keyframes noise {
+          0% { transform: translate(0,0); }
+          50% { transform: translate(-5%, 5%); }
+          100% { transform: translate(5%, -5%); }
         }
 
-        /* Animations */
-        @keyframes float {
-            0% { transform: translateY(0px) rotate(0deg); opacity: 0; }
-            50% { opacity: 0.5; }
-            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
-        }
-        .heart-particle {
-            position: fixed;
-            pointer-events: none;
-            z-index: 0;
-            animation: float 12s linear infinite;
-        }
-        @keyframes star-twinkle {
-            0%, 100% { opacity: 0.2; transform: scale(0.8); }
-            50% { opacity: 0.8; transform: scale(1.1); }
-        }
-        .animate-twinkle {
-            animation: star-twinkle var(--duration, 3s) ease-in-out infinite;
-            animation-delay: var(--delay, 0s);
-        }
-        
-        /* Reveal on Scroll Class */
         .reveal {
           opacity: 0;
-          transform: translateY(30px);
-          transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+          transform: translateY(20px);
+          transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .reveal.active {
           opacity: 1;
           transform: translateY(0);
         }
-        
-        .glass {
-          background: rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
+
+        #custom-cursor {
+          position: fixed;
+          width: 20px;
+          height: 20px;
+          background: rgba(251, 113, 133, 0.4);
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 9999;
+          transition: transform 0.15s ease-out;
+          transform: translate(-50%, -50%);
+          backdrop-filter: blur(2px);
+          border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .cursor-hover #custom-cursor {
+          transform: translate(-50%, -50%) scale(2.5);
+          background: rgba(225, 29, 72, 0.7);
+        }
+
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.2); }
+        }
+        .star {
+          position: absolute;
+          background: white;
+          border-radius: 50%;
+          pointer-events: none;
+          animation: twinkle var(--duration) ease-in-out infinite;
+          animation-delay: var(--delay);
+        }
+
+        .polaroid-shine::after {
+          content: '';
+          position: absolute;
+          top: 0; left: -100%;
+          width: 50%; height: 100%;
+          background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+          transform: skewX(-25deg);
+          transition: 0.75s;
+        }
+        .polaroid-shine:hover::after {
+          left: 125%;
+        }
+
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
+        }
+        .animate-shake {
+          animation: shake 0.3s ease-in-out;
         }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom": "https://esm.sh/react-dom@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
+    "lucide-react": "https://esm.sh/lucide-react@^0.474.0",
+    "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.3",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.3"
   }
 }
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body>
+<body class="grain">
+    <div id="custom-cursor"></div>
     <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
+    <script>
+        const cursor = document.getElementById('custom-cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button')) {
+                document.body.classList.add('cursor-hover');
+            } else {
+                document.body.classList.remove('cursor-hover');
+            }
+        });
+    </script>
 </body>
 </html>
