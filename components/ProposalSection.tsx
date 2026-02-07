@@ -1,154 +1,147 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import confetti from 'https://cdn.skypack.dev/canvas-confetti';
+import React, { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import { Heart, HeartCrack, Sparkles } from 'lucide-react';
-import HeartCanvas2D from './HeartCanvas2D';
+import HeartCanvas2D from './HeartCanvas2D.tsx';
 
 const ProposalSection: React.FC = () => {
-  const [noClickCount, setNoClickCount] = useState(0);
-  const [accepted, setAccepted] = useState(false);
-  const [rejected, setRejected] = useState(false);
-  const [noBtnPos, setNoBtnPos] = useState({ x: 0, y: 0 });
+  const [noCount, setNoCount] = useState(0);
+  const [status, setStatus] = useState<'IDLE' | 'YES' | 'NO'>('IDLE');
+  const [isShaking, setIsShaking] = useState(false);
 
-  const chimeAudio = useRef<HTMLAudioElement | null>(null);
-  const softAudio = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    chimeAudio.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
-    softAudio.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
-    if (chimeAudio.current) chimeAudio.current.volume = 0.5;
-    if (softAudio.current) softAudio.current.volume = 0.3;
-  }, []);
-
-  const playSound = (audio: HTMLAudioElement | null) => {
-    if (audio) {
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-    }
-  };
+  const noPhrases = [
+    "No",
+    "are you sure? 🥺",
+    "please mann jao na 🙏"
+  ];
 
   const sendNotification = async (type: 'YES' | 'NO') => {
-    const WEBHOOK_URL = 'https://discord.com/api/webhooks/1469714811184087195/kKvOUHjZDy74AJ0q6VsSfXHO0U6EOKOqF3O8uV7XcgeqhE4uwuPxWmcJmjCNXf4sABAx';
-    if (!WEBHOOK_URL) return;
+    const WEBHOOK = 'https://discord.com/api/webhooks/1469714811184087195/kKvOUHjZDy74AJ0q6VsSfXHO0U6EOKOqF3O8uV7XcgeqhE4uwuPxWmcJmjCNXf4sABAx';
     try {
-      await fetch(WEBHOOK_URL, {
+      await fetch(WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: type === 'YES' ? "❤️ **SHE SAID YES!** ❤️" : "💔 **She clicked No.**" }),
+        body: JSON.stringify({ 
+          content: type === 'YES' ? "💍 **SHE SAID YES!** ❤️" : "💔 **She said No.** Choice respected." 
+        }),
       });
-    } catch (e) {}
-  };
-
-  const moveNoButton = () => {
-    if (noClickCount >= 2) {
-      const x = (Math.random() - 0.5) * 300;
-      const y = (Math.random() - 0.5) * 150;
-      setNoBtnPos({ x, y });
-    }
-  };
-
-  const handleNo = () => {
-    if (noClickCount < 4) {
-      setNoClickCount(prev => prev + 1);
-      playSound(softAudio.current);
-      moveNoButton();
-    } else {
-      setRejected(true);
-      sendNotification('NO');
-    }
+    } catch (e) { console.error(e); }
   };
 
   const handleYes = () => {
-    playSound(chimeAudio.current);
+    setStatus('YES');
     sendNotification('YES');
-    setAccepted(true);
     confetti({
       particleCount: 200,
-      spread: 90,
+      spread: 100,
       origin: { y: 0.6 },
-      colors: ['#f43f5e', '#fb7185', '#ffffff', '#fb923c']
+      colors: ['#fb7185', '#e11d48', '#ffffff', '#ffd7e0']
     });
   };
 
-  if (accepted) {
+  const handleNo = () => {
+    setIsShaking(true);
+    if (noCount < noPhrases.length - 1) {
+      setNoCount(noCount + 1);
+    } else {
+      setStatus('NO');
+      sendNotification('NO');
+    }
+    // Reset shake after animation completes
+    setTimeout(() => setIsShaking(false), 400);
+  };
+
+  if (status === 'YES') {
     return (
-      <section className="min-h-screen flex flex-col items-center justify-center bg-white px-6 text-center z-50 relative animate-in fade-in duration-1000 overflow-hidden">
+      <section className="h-screen flex flex-col items-center justify-center bg-rose-50 text-center px-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(251,113,133,0.15)_0%,transparent_70%)]"></div>
+        {/* This is the same heart animation as before, now restored to high density */}
         <HeartCanvas2D />
-        <div className="absolute inset-0 bg-rose-50/30 backdrop-blur-sm"></div>
-        
-        <div className="relative z-10 max-w-2xl space-y-12 reveal active">
-          <div className="relative inline-block">
-             <Heart fill="#f43f5e" size={100} className="mx-auto text-rose-600 animate-pulse" />
-             <Sparkles className="absolute -top-4 -right-4 text-amber-400 animate-bounce" size={32} />
+        <div className="relative z-10 animate-in fade-in zoom-in duration-1000 max-w-4xl">
+          <div className="flex justify-center gap-4 mb-8">
+            <Sparkles size={40} className="text-amber-400 animate-pulse" />
+            <Heart size={80} className="text-rose-600 animate-bounce" fill="currentColor" />
+            <Sparkles size={40} className="text-amber-400 animate-pulse" />
           </div>
-          
-          <div className="space-y-6">
-            <h1 className="text-5xl md:text-7xl font-romantic text-rose-600">huhh thankyou...</h1>
-            <p className="text-3xl md:text-4xl text-gray-900 font-serif-elegant italic leading-tight">
-              thankyou so much, I love you, love you so much.
-            </p>
-          </div>
-          
-          <div className="h-px w-32 bg-rose-200 mx-auto"></div>
-          
-          <p className="text-xl md:text-2xl text-gray-600 font-serif-elegant italic max-w-lg mx-auto leading-relaxed">
-            I know things are complicated, but I am right here. Always waiting, always choosing you.
+          <h2 className="text-5xl md:text-7xl font-romantic text-rose-600 mb-8 drop-shadow-lg">My World. ❤️</h2>
+          <p className="text-2xl md:text-3xl font-serif-elegant italic text-zinc-800 leading-relaxed px-4">
+            "huhh thankyou , thankyou so much , I love you , love you so much , I know you are confused and not ready for relationship but I am here always waiting for you"
           </p>
-          
-          <div className="pt-12">
-             <p className="text-rose-500 font-bold uppercase tracking-[0.6em] text-[10px]">Happy Propose Day My Love ❤️</p>
+          <div className="mt-16 inline-block px-10 py-4 rounded-full border border-rose-200 text-rose-400 font-bold uppercase tracking-[0.5em] text-sm animate-pulse">
+            Forever Starts Now
           </div>
         </div>
       </section>
     );
   }
 
-  if (rejected) {
+  if (status === 'NO') {
     return (
-      <section className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 px-4 text-center z-10 relative">
-        <HeartCrack className="mx-auto text-zinc-300 mb-8" size={80} />
-        <h1 className="text-5xl md:text-7xl font-serif-elegant text-zinc-800 mb-8">I Understand.</h1>
-        <p className="text-2xl text-gray-500 font-serif-elegant italic max-w-xl mx-auto leading-relaxed">
-          "Its okay... I will try again and again. My love for you isn't bound by a single moment or a single 'no'."
+      <section className="h-screen flex flex-col items-center justify-center bg-zinc-950 text-center px-6 text-white relative">
+        <HeartCrack size={100} className="mx-auto text-zinc-700 mb-10" />
+        <h2 className="text-4xl md:text-6xl font-serif-elegant mb-8 text-rose-100 italic">Always Here.</h2>
+        <p className="text-xl md:text-3xl italic text-zinc-400 font-serif-elegant max-w-4xl leading-relaxed">
+          "its okay I will try again and again , love you in silence and in crowd both"
         </p>
-        <button onClick={() => { setRejected(false); setNoClickCount(0); setNoBtnPos({x:0, y:0}); }} className="mt-16 text-rose-500 font-bold tracking-widest uppercase text-xs border-b border-rose-200 pb-1 hover:text-rose-600 transition-colors">
-          Let me rethink
+        <button 
+            onClick={() => { setNoCount(0); setStatus('IDLE'); }} 
+            className="mt-16 px-8 py-3 rounded-full border border-rose-500/20 text-rose-500/60 hover:text-rose-500 hover:border-rose-500 hover:bg-rose-500/5 transition-all cursor-pointer font-medium tracking-wide"
+        >
+          I changed my mind
         </button>
       </section>
     );
   }
 
+  const yesScale = 1 + (noCount * 0.25);
+
   return (
-    <section className="min-h-screen flex flex-col items-center justify-center bg-white px-6 py-32 relative overflow-hidden z-10">
-      <div className="max-w-4xl text-center reveal">
-        <div className="mb-10 inline-block px-5 py-2 rounded-full glass border border-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-[0.5em]">
-          Final Chapter
+    <section className="py-48 px-6 flex flex-col items-center justify-center text-center bg-white relative z-10 overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-rose-50/50 rounded-full blur-[120px] -z-10"></div>
+      
+      <div className="reveal active">
+        <div className="flex justify-center mb-10">
+          <div className="p-4 bg-rose-50 rounded-full animate-pulse">
+             <Heart className="text-rose-500" size={32} fill="currentColor" />
+          </div>
         </div>
-        <h2 className="text-5xl md:text-8xl font-serif-elegant text-zinc-900 mb-16 font-bold tracking-tighter">I have one final question...</h2>
         
-        <div className="bg-rose-50/50 backdrop-blur-md p-12 md:p-20 rounded-[3rem] shadow-inner mb-20 border border-rose-100 relative overflow-hidden group">
-           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-rose-300 to-transparent"></div>
-           <p className="text-4xl md:text-7xl font-romantic text-rose-600 group-hover:scale-105 transition-transform duration-700">Will you be my forever?</p>
+        <h2 className="text-5xl md:text-7xl font-serif-elegant text-zinc-900 mb-16 tracking-tight">The Question</h2>
+        
+        <div className="relative mb-24 max-w-5xl mx-auto group">
+           <div className="p-12 md:p-20 rounded-[3rem] md:rounded-[4rem] bg-rose-50/30 border-2 border-rose-100/50 backdrop-blur-sm shadow-[0_40px_100px_rgba(251,113,133,0.1)] relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-rose-300 to-transparent"></div>
+              <p className="text-3xl md:text-5xl font-romantic text-rose-600 leading-tight">
+                In every frame of my life, from the first time I saw you till the very last... <br className="hidden md:block"/> will you be mine?
+              </p>
+              <div className="absolute bottom-0 right-0 w-32 h-32 bg-rose-200/20 rounded-tl-full"></div>
+           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center justify-center gap-8 relative">
+        <div className="flex flex-col md:flex-row items-center justify-center gap-8 min-h-[150px] w-full max-w-md mx-auto md:max-w-none">
           <button 
-            onClick={handleYes} 
-            className="w-full md:w-auto bg-rose-600 text-white px-16 py-6 rounded-full text-2xl font-bold hover:scale-110 active:scale-95 transition-all shadow-[0_20px_40px_-10px_rgba(244,63,94,0.4)] flex items-center justify-center gap-4 group"
+            onClick={handleYes}
+            style={{ transform: `scale(${yesScale})` }}
+            className="w-full md:w-auto px-16 py-7 bg-rose-600 text-white rounded-full text-2xl md:text-4xl font-bold transition-all duration-500 shadow-[0_20px_50px_rgba(225,29,72,0.3)] hover:bg-rose-500 hover:scale-[1.08] hover:shadow-[0_25px_60px_rgba(225,29,72,0.5)] hover:brightness-110 active:scale-95 group relative overflow-hidden"
           >
-            <Heart fill="currentColor" size={24} className="group-hover:animate-ping" /> Yes!
+            <span className="relative z-10 flex items-center justify-center gap-3">
+               YES ❤️
+            </span>
+            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
           </button>
           
           <button 
             onClick={handleNo}
-            onMouseEnter={moveNoButton}
-            style={{ transform: `translate(${noBtnPos.x}px, ${noBtnPos.y}px)` }}
-            className="w-full md:w-auto bg-zinc-100 text-zinc-400 px-16 py-6 rounded-full text-xl font-medium transition-all duration-300 whitespace-nowrap"
+            className={`w-full md:w-auto px-12 py-5 bg-zinc-100 text-zinc-400 rounded-full text-xl font-medium transition-all duration-300 hover:bg-zinc-200 hover:text-zinc-600 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] active:scale-95 relative overflow-hidden ${isShaking ? 'animate-shake' : ''}`}
+            style={{ 
+                opacity: Math.max(0.4, 1 - noCount * 0.1)
+            }}
           >
-            {noClickCount === 1 ? "Wait, what? 🥺" : 
-             noClickCount === 2 ? "Please mann jao na... ❤️" : 
-             noClickCount === 3 ? "Rethink this?" : 
-             noClickCount === 4 ? "Last chance..." : "No"}
+            <span 
+              key={noCount} 
+              className="inline-block animate-in fade-in zoom-in duration-300"
+            >
+              {noPhrases[noCount]}
+            </span>
           </button>
         </div>
       </div>

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 
 const HeartCanvas2D: React.FC = () => {
@@ -7,13 +6,13 @@ const HeartCanvas2D: React.FC = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
     const mobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
       (navigator.userAgent || navigator.vendor || (window as any).opera || "").toLowerCase()
     );
-    const koef = mobile ? 0.5 : 1;
+    
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
@@ -25,29 +24,32 @@ const HeartCanvas2D: React.FC = () => {
     const scaleAndTranslate = (pos: number[], sx: number, sy: number, dx: number, dy: number) => [dx + pos[0] * sx, dy + pos[1] * sy];
 
     const pointsOrigin: number[][] = [];
-    const traceCount = mobile ? 20 : 50;
+    // Restored to original high density values
+    const traceCount = mobile ? 20 : 50; 
     const rand = Math.random;
-    const dr = mobile ? 0.3 : 0.1;
+    const dr = mobile ? 0.2 : 0.1; 
 
     for (let i = 0; i < Math.PI * 2; i += dr) {
-      pointsOrigin.push(scaleAndTranslate(heartPosition(i), 210, 13, 0, 0));
-      pointsOrigin.push(scaleAndTranslate(heartPosition(i), 150, 9, 0, 0));
-      pointsOrigin.push(scaleAndTranslate(heartPosition(i), 90, 5, 0, 0));
+      pointsOrigin.push(scaleAndTranslate(heartPosition(i), 180, 11, 0, 0));
+      pointsOrigin.push(scaleAndTranslate(heartPosition(i), 110, 7, 0, 0));
+      pointsOrigin.push(scaleAndTranslate(heartPosition(i), 50, 3, 0, 0));
     }
 
     const heartPointsCount = pointsOrigin.length;
     const targetPoints: number[][] = [];
 
     const pulse = (kx: number, ky: number) => {
-      pointsOrigin.forEach((point, i) => {
+      for (let i = 0; i < heartPointsCount; i++) {
         targetPoints[i] = [
-          kx * point[0] + width / 2,
-          ky * point[1] + height / 2,
+          kx * pointsOrigin[i][0] + width / 2,
+          ky * pointsOrigin[i][1] + height / 2,
         ];
-      });
+      }
     };
 
-    const e = Array.from({ length: heartPointsCount }, () => {
+    // Restored to original lush particle count
+    const particleCount = mobile ? 60 : 120; 
+    const particles = Array.from({ length: particleCount }, () => {
       const x = rand() * width;
       const y = rand() * height;
       const trace = Array.from({ length: traceCount }, () => ({ x, y }));
@@ -55,27 +57,27 @@ const HeartCanvas2D: React.FC = () => {
       return {
         vx: 0,
         vy: 0,
-        R: 2,
-        speed: rand() + 5,
+        speed: rand() * 2 + 3,
         q: ~~(rand() * heartPointsCount),
         D: 2 * (~~(rand() * 2)) - 1,
-        force: 0.2 * rand() + 0.7,
-        f: 'rgba(255, 105, 180, 0.6)', // Changed to Pink to match theme
+        force: 0.1 * rand() + 0.8,
+        // Slightly more vibrant color for light backgrounds
+        f: 'rgba(225, 29, 72, 0.45)',
         trace,
       };
     });
 
-    const config = { traceK: 0.4, timeDelta: 0.6 };
+    const config = { traceK: 0.4, timeDelta: 0.05 };
     let time = 0;
 
     const loop = () => {
       const n = -Math.cos(time);
       pulse((1 + n) * 0.5, (1 + n) * 0.5);
-      time += ((Math.sin(time) < 0 ? 9 : n > 0.8 ? 0.2 : 1) * config.timeDelta);
-      ctx.fillStyle = 'rgba(255, 245, 247, 0.1)'; // Matches rose-50 background
-      ctx.fillRect(0, 0, width, height);
+      time += config.timeDelta;
+      
+      ctx.clearRect(0, 0, width, height);
 
-      e.forEach((particle) => {
+      particles.forEach((particle) => {
         const q = targetPoints[particle.q];
         if (!q) return;
         const dx = particle.trace[0].x - q[0];
@@ -85,28 +87,29 @@ const HeartCanvas2D: React.FC = () => {
         if (length < 10) {
           if (rand() > 0.95) {
             particle.q = ~~(rand() * heartPointsCount);
-          } else if (rand() > 0.99) {
-            particle.D *= -1;
           }
           particle.q = (particle.q + particle.D) % heartPointsCount;
           if (particle.q < 0) particle.q += heartPointsCount;
         }
 
-        particle.vx += (-dx / length) * particle.speed;
-        particle.vy += (-dy / length) * particle.speed;
+        particle.vx += (-dx / length) * particle.speed * 0.12;
+        particle.vy += (-dy / length) * particle.speed * 0.12;
         particle.trace[0].x += particle.vx;
         particle.trace[0].y += particle.vy;
         particle.vx *= particle.force;
         particle.vy *= particle.force;
 
-        particle.trace.reduce((prev, curr) => {
+        for (let i = 1; i < traceCount; i++) {
+          const prev = particle.trace[i - 1];
+          const curr = particle.trace[i];
           curr.x -= config.traceK * (curr.x - prev.x);
           curr.y -= config.traceK * (curr.y - prev.y);
-          return curr;
-        });
+        }
 
         ctx.fillStyle = particle.f;
-        particle.trace.forEach((t) => ctx.fillRect(t.x, t.y, 1, 1));
+        for (let i = 0; i < traceCount; i++) {
+           ctx.fillRect(particle.trace[i].x, particle.trace[i].y, 1.8, 1.8);
+        }
       });
 
       window.requestAnimationFrame(loop);
@@ -127,7 +130,7 @@ const HeartCanvas2D: React.FC = () => {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.6 }}
+      style={{ opacity: 1 }}
     />
   );
 };

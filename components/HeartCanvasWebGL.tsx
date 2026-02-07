@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 
 const HeartCanvasWebGL: React.FC = () => {
@@ -7,14 +6,14 @@ const HeartCanvasWebGL: React.FC = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    
+    // Performance optimization: Lower resolution for the heavy shader
+    const dpr = Math.min(window.devicePixelRatio, 1.5);
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
 
-    const gl = canvas.getContext('webgl');
-    if (!gl) {
-      console.error('Unable to initialize WebGL.');
-      return;
-    }
+    const gl = canvas.getContext('webgl', { antialias: false, depth: false });
+    if (!gl) return;
 
     let time = 0.0;
 
@@ -26,17 +25,17 @@ const HeartCanvasWebGL: React.FC = () => {
     `;
 
     const fragmentSource = `
-      precision highp float;
+      precision mediump float;
       uniform float width;
       uniform float height;
       vec2 resolution = vec2(width, height);
       uniform float time;
-      #define POINT_COUNT 8
+      #define POINT_COUNT 6
       vec2 points[POINT_COUNT];
       const float speed = -0.5;
-      const float len = 0.25;
-      float intensity = 1.3;
-      float radius = 0.008;
+      const float len = 0.3;
+      float intensity = 1.2;
+      float radius = 0.007;
 
       float sdBezier(vec2 pos, vec2 A, vec2 B, vec2 C){    
         vec2 a = B - A;
@@ -56,17 +55,14 @@ const HeartCanvasWebGL: React.FC = () => {
           h = sqrt(h);
           vec2 x = (vec2(h, -h) - q) / 2.0;
           vec2 uv = sign(x)*pow(abs(x), vec2(1.0/3.0));
-          float t = uv.x + uv.y - kx;
-          t = clamp( t, 0.0, 1.0 );
-          vec2 qos = d + (c + b*t)*t;
-          res = length(qos);
+          float t = clamp(uv.x + uv.y - kx, 0.0, 1.0);
+          res = length(d + (c + b*t)*t);
         } else {
           float z = sqrt(-p);
           float v = acos( q/(p*z*2.0) ) / 3.0;
           float m = cos(v);
           float n = sin(v)*1.732050808;
-          vec3 t = vec3(m + m, -n - m, n - m) * z - kx;
-          t = clamp( t, 0.0, 1.0 );
+          vec3 t = clamp(vec3(m + m, -n - m, n - m) * z - kx, 0.0, 1.0);
           vec2 qos = d + (c + b*t.x)*t.x;
           float dis = dot(qos,qos);
           res = dis;
@@ -76,7 +72,7 @@ const HeartCanvasWebGL: React.FC = () => {
           qos = d + (c + b*t.z)*t.z;
           dis = dot(qos,qos);
           res = min(res,dis);
-          res = sqrt( res );
+          res = sqrt(res);
         }
         return res;
       }
@@ -85,10 +81,6 @@ const HeartCanvasWebGL: React.FC = () => {
         return vec2(16.0 * sin(t) * sin(t) * sin(t),
                     -(13.0 * cos(t) - 5.0 * cos(2.0*t)
                     - 2.0 * cos(3.0*t) - cos(4.0*t)));
-      }
-
-      float getGlow(float dist, float radius, float intensity){
-        return pow(radius/dist, intensity);
       }
 
       float getSegment(float t, vec2 pos, float offset, float scale){
@@ -109,24 +101,18 @@ const HeartCanvasWebGL: React.FC = () => {
       void main(){
         vec2 uv = gl_FragCoord.xy/resolution.xy;
         float widthHeightRatio = resolution.x/resolution.y;
-        vec2 centre = vec2(0.5, 0.5);
-        vec2 pos = centre - uv;
+        vec2 pos = vec2(0.5, 0.5) - uv;
         pos.y /= widthHeightRatio;
         pos.y += 0.02;
         float scale = 0.000015 * height;
         float t = time;
-        float dist = getSegment(t, pos, 0.0, scale);
-        float glow = getGlow(dist, radius, intensity);
+        float dist1 = getSegment(t, pos, 0.0, scale);
+        float dist2 = getSegment(t, pos, 3.4, scale);
         vec3 col = vec3(0.0);
-        col += 10.0*vec3(smoothstep(0.003, 0.001, dist));
-        col += glow * vec3(1.0,0.05,0.3);
-        dist = getSegment(t, pos, 3.4, scale);
-        glow = getGlow(dist, radius, intensity);
-        col += 10.0*vec3(smoothstep(0.003, 0.001, dist));
-        col += glow * vec3(0.1,0.4,1.0);
+        col += pow(radius/dist1, intensity) * vec3(1.0,0.05,0.3);
+        col += pow(radius/dist2, intensity) * vec3(0.1,0.4,1.0);
         col = 1.0 - exp(-col);
-        col = pow(col, vec3(0.4545));
-        gl_FragColor = vec4(col,1.0);
+        gl_FragColor = vec4(pow(col, vec3(0.4545)), 0.6);
       }
     `;
 
@@ -168,15 +154,15 @@ const HeartCanvasWebGL: React.FC = () => {
     draw();
 
     const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
       gl.viewport(0, 0, canvas.width, canvas.height);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-40 mix-blend-screen pointer-events-none" />;
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-30 mix-blend-screen pointer-events-none" />;
 };
 
 export default HeartCanvasWebGL;
